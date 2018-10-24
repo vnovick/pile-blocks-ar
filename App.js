@@ -83,7 +83,8 @@ export default class ViroSample extends Component {
       ]
     })
   }
-  
+
+
   render() {
     switch (this.state.gameState) {
       case GAME_STATES.MENU:
@@ -154,7 +155,7 @@ export default class ViroSample extends Component {
             underlayColor={'#68a0ff'} 
             onPress={this.loadModel} >
             <Text style={localStyles.buttonText}>
-              Load Model
+              Load Block
             </Text>
           </TouchableHighlight>
         </View>

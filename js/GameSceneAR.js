@@ -20,7 +20,7 @@ import {
 } from 'react-viro';
 
 
-export const MODEL_TYPES = ["Lava", "Sphere", "Rocks", "Alien"]
+export const MODEL_TYPES = ["Lava", "Crystal", "Rocks", "Alien"]
 const GAME_STATES = {
   GAME_STARTED: "GAME_STARTED",
   IN_GAME: "IN_GAME"
@@ -43,18 +43,20 @@ export class GameSceneAR extends Component {
 
   getModelByType(modelType, index) {
     switch (modelType) {
-      case "Sphere":
+      case "Crystal":
         return (
-          <ViroSphere
+          <ViroBox
             key={index}
-            radius={.05}
-            position={[0, 1, 0]}
-            materials={["metal"]} 
+            height={.03}
+            width={.05}
+            length={.07}
+            position={[0, .5, 0]}
+            materials={["crystal"]} 
             dragType="FixedToWorld"
             onDrag={() => {}}
             physicsBody={{
-              type:'Dynamic',
-              mass: .1,
+              type:'Dynamic', 
+              mass: 1,
             }}
           />
         )
@@ -62,16 +64,16 @@ export class GameSceneAR extends Component {
         return (
           <ViroBox
             key={index}
-            height={.05}
-            width={.05}
-            length={.05}
-            position={[0, 1, 0]}
+            height={.06}
+            width={.02}
+            length={.04}
+            position={[0, .5, 0]}
             materials={["alien"]} 
             dragType="FixedToWorld"
             onDrag={() => {}}
             physicsBody={{
               type:'Dynamic', 
-              mass: .1,
+              mass: 1,
             }}
           />
         )
@@ -79,31 +81,33 @@ export class GameSceneAR extends Component {
         return (
           <ViroBox
             key={index}
-            height={.05}
+            height={.03}
             width={.05}
-            length={.05}
-            position={[0, 1, 0]}
+            length={.06}
+            position={[0, .5, 0]}
             materials={["rock"]} 
             dragType="FixedToWorld"
             onDrag={() => {}}
             physicsBody={{
-              type:'Dynamic', 
-              mass: .1,
+              type:'Dynamic',               
+              mass: 1,
             }}
           />
         )
       case "Lava":
         return (
-          <ViroSphere
+          <ViroBox
             key={index}
-            radius={.05}
-            position={[0, 1, 0]}
+            height={.05}
+            width={.05}
+            length={.1}
+            position={[0, .5, 0]}
             materials={["lava"]} 
             dragType="FixedToWorld"
             onDrag={() => {}}
             physicsBody={{
               type:'Dynamic', 
-              mass: .1,
+              mass: 1,
             }}
           />
         )
@@ -131,7 +135,6 @@ export class GameSceneAR extends Component {
   
   getARScene(){
    return (
-    <ViroNode>
       <ViroARPlaneSelector onPlaneSelected={this.onPlaneSelected}>
         { 
           this.props.arSceneNavigator
@@ -140,12 +143,12 @@ export class GameSceneAR extends Component {
             .map((modelType, index) => 
               this.getModelByType(modelType, index)) 
         }
-      <ViroQuad 
-        arShadowReceiver={true}
-        key="surface"
-        rotation={[-90, 0, 0]}
+      <ViroBox
         materials={["metal"]}
         physicsBody={{ type:'Static', restitution:0.3, friction: 0.3 }}
+        width={this.state.planeWidth}
+        height={this.state.planeHeight}
+        scale={[1,.01, 1]}
       />
       <ViroQuad 
         key="deadZone"
@@ -153,18 +156,17 @@ export class GameSceneAR extends Component {
         width={100}
         rotation={[-90, 0, 0]}
         position={[0,-3,0]}
-        materials={["deadZone"]}
-        physicsBody={{ type:'Static', restitution:0.3 }}
+        materials={["transparent"]}
+        physicsBody={{ type:'Static' }}
         onCollision={this.onCollide}
       />
       </ViroARPlaneSelector>
-    </ViroNode>
    )
   }
  
   render() {
     return (
-        <ViroARScene onTrackingUpdated={this._onInitialized}>
+        <ViroARScene onTrackingUpdated={this._onInitialized} physicsWorld={{ gravity: [0, -5, 0] }}>
           <ViroDirectionalLight color="#ffffff"
             direction={[0, -1, 0]}
             shadowOrthographicPosition={[0, 8, -2]}
@@ -211,10 +213,8 @@ var styles = StyleSheet.create({
 ViroMaterials.createMaterials({
   rock: {
     lightingModel: "Lambert",
-    diffuseTexture: require('./res/models/Rock_6_FREE/Rock_6/Rock_6_Tex/Rock_6_d.png'),
-    normalTexture: require('./res/models/Rock_6_FREE/Rock_6/Rock_6_Tex/Rock_6_n.png'),
-    specularTexture: require('./res/models/Rock_6_FREE/Rock_6/Rock_6_Tex/Rock_6_s.png'),
-    ambientOcclusionTexture: require('./res/models/Rock_6_FREE/Rock_6/Rock_6_Tex/Rock_6_ao.png')
+    diffuseTexture: require('./res/textures/Canyon_Rock_001_COLOR.jpg'),
+    normalTexture: require('./res/textures/Canyon_Rock_001_NORM.jpg'),
   },
   alien: {
     lightingModel: "Blinn",
@@ -223,7 +223,7 @@ ViroMaterials.createMaterials({
     specularTexture: require('./res/textures/Alien_Flesh_001_spec.jpg')
   },
   lava: {
-    lightingModel: "Constant",
+    lightingModel: "Lambert",
     diffuseTexture: require("./res/textures/Lava_001_COLOR.png"),
     normalTexture: require("./res/textures/Lava_001_NRM.png"),
     specularTexture: require('./res/textures/Lava_001_SPEC.png')
@@ -237,7 +237,7 @@ ViroMaterials.createMaterials({
     lightingModel: "Constant",
     diffuseColor: "rgba(123,123,231,.4)"
   },
-  deadZone: {
+  transparent: {
     diffuseColor: "rgba(0,0,0,0)"
   },
   metal: {
