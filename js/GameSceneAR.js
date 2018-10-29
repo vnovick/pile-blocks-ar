@@ -20,11 +20,7 @@ import {
 } from 'react-viro';
 
 
-export const MODEL_TYPES = ["Lava", "Crystal", "Rocks", "Alien"]
-const GAME_STATES = {
-  GAME_STARTED: "GAME_STARTED",
-  IN_GAME: "IN_GAME"
-}
+const MODEL_TYPES = ["Lava", "Crystal", "Rocks", "Alien"]
 
 export class GameSceneAR extends Component {
 
@@ -42,7 +38,7 @@ export class GameSceneAR extends Component {
   }
 
   getModelByType(modelType, index) {
-    switch (modelType) {
+    switch (MODEL_TYPES[modelType]) {
       case "Crystal":
         return (
           <ViroBox
@@ -120,16 +116,9 @@ export class GameSceneAR extends Component {
   }
 
   onPlaneSelected = (anchorMap) => {
-    const worldCenterPosition = [
-      anchorMap.position[0] + anchorMap.center[0],
-      anchorMap.position[1] + anchorMap.center[1],
-      anchorMap.position[2] + anchorMap.center[2]
-    ];
     this.setState({
-      foundPlane: true, 
       planeWidth: anchorMap.width,
-      planeHeight: anchorMap.height,
-      worldCenterPosition, 
+      planeHeight: anchorMap.height
     })
   }
   

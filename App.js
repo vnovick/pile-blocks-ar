@@ -18,7 +18,7 @@ import {
   TouchableHighlight,
 } from 'react-native';
 
-import { GameSceneAR, MODEL_TYPES } from './js/GameSceneAR';
+import { GameSceneAR } from './js/GameSceneAR';
 
 import {
   ViroARSceneNavigator
@@ -71,7 +71,7 @@ export default class ViroSample extends Component {
     })
   }
 
-  getRandomModel = () => MODEL_TYPES[Math.floor(Math.random() * 4)]
+  getRandomModel = () => Math.floor(Math.random() * 4)
 
   loadModel = () => {
     const nextModel = this.getRandomModel();
@@ -83,6 +83,7 @@ export default class ViroSample extends Component {
       ]
     })
   }
+  
 
 
   render() {
@@ -127,10 +128,8 @@ export default class ViroSample extends Component {
         <StatusBar hidden={true} />
         <ViroARSceneNavigator
           apiKey={API_KEY}
-          ref={navigator => this._setARNavigatorRef = navigator} 
           viroAppProps={{
             modelMap: this.state.modelMap,
-            updateScore: this.updateScore,
             gameOver: this.gameOver
           }}
           initialScene={{ scene: GameSceneAR }} 
