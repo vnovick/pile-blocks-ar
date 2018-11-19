@@ -33,17 +33,20 @@ const API_KEY = "1839C275-6929-45AF-B638-EF2DEE44C1D9";
 const GAME_STATES = {
   MENU: Symbol("Menu"),
   IN_GAME: Symbol("InGame"),
-  GAME_OVER: Symbol("GameOver")
+  GAME_OVER: Symbol("GameOver"),
+  LEVEL_START: Symbol("LevelStart"),
 }
 
 
 const SCORE_MODIFIER = 100;
+const MODEL_PER_LEVEL = 10;
 
 export default class ViroSample extends Component {
 
   state = {
     score: 0,
-    modelMap: [],
+    level: 0,
+    lives: 3,
     gameState: GAME_STATES.MENU
   }
 
@@ -53,12 +56,27 @@ export default class ViroSample extends Component {
     })
   }
 
+  changeLevel = () => {
+    this.setState({
+      level: this.state.level + 1,
+      gameState: GAME_STATES.LEVEL_START
+    })
+  }
 
+  looseLive = () => {
+    if (this.state.lives === 1) {
+      return this.gameOver();
+    }
+    this.setState({
+      lives: this.state.lives - 1
+    })
+  }
 
   gameOver = () => {
     this.setState({
       score: 0,
-      modelMap: [],
+      level: 0,
+      lives: 3,
       gameState: GAME_STATES.GAME_OVER
     })
   }
@@ -66,24 +84,20 @@ export default class ViroSample extends Component {
   backToMenu = () => {
     this.setState({
       score: 0,
-      modelMap: [],
+      level: 1,
+      lives: 3,
       gameState: GAME_STATES.MENU
     })
   }
+  
 
-  getRandomModel = () => Math.floor(Math.random() * 4)
 
-  loadModel = () => {
-    const nextModel = this.getRandomModel();
+  updateScore = () => {
     this.setState({
-      score: this.state.score + SCORE_MODIFIER,
-      modelMap: [
-        ...this.state.modelMap,
-        nextModel
-      ]
+      score: this.state.score + 100
     })
   }
-  
+
 
 
   render() {
@@ -94,7 +108,25 @@ export default class ViroSample extends Component {
         return this.renderGameView()
       case GAME_STATES.GAME_OVER:
         return this.renderUI()
+      case GAME_STATES.LEVEL_START:
+        return this.renderLevelStartGUI()
     }
+  }
+
+  renderLevelStartGUI(){
+    return (
+      <View style={localStyles.outer} >
+        <View style={localStyles.inner}>
+          <Text style={localStyles.titleText}>{`LEVEL ${this.state.level}`}</Text>
+          <Text style={localStyles.text}>{`Put ${this.state.level * MODEL_PER_LEVEL} blocks on the surface. When you click on the block physics is applied. You can drag block around. Whenever block falls you loose a life`}</Text>
+          <TouchableHighlight style={localStyles.buttons}
+            onPress={this.startGame}
+            underlayColor={'#68a0ff'} >
+            <Text style={localStyles.buttonText}>Start Level</Text>
+          </TouchableHighlight>
+        </View>
+      </View>
+    )
   }
 
   // Presents the user with a choice of an AR or VR experience
@@ -102,7 +134,7 @@ export default class ViroSample extends Component {
     return (
       <View style={localStyles.outer} >
         <View style={localStyles.inner} >
-          <Text>Pile Blocks AR</Text>
+          <Text style={localStyles.titleText}>Pile Blocks AR</Text>
           <Text style={localStyles.titleText}>
             { this.state.gameState === GAME_STATES.MENU ? "MENU" : "GAME OVER" }
           </Text>
@@ -113,13 +145,19 @@ export default class ViroSample extends Component {
             </Text>
           }
           <TouchableHighlight style={localStyles.buttons}
-            onPress={this.startGame}
+            onPress={this.changeLevel}
             underlayColor={'#68a0ff'} >
             <Text style={localStyles.buttonText}>Start Game</Text>
           </TouchableHighlight>
         </View>
       </View>
     );
+  }
+
+  setGameReady = () => {
+    this.setState({
+      planeSelected: true
+    })
   }
 
   renderGameView(){
@@ -129,8 +167,12 @@ export default class ViroSample extends Component {
         <ViroARSceneNavigator
           apiKey={API_KEY}
           viroAppProps={{
-            modelMap: this.state.modelMap,
-            gameOver: this.gameOver
+            modelNumber: this.state.level * MODEL_PER_LEVEL,
+            level: this.state.level,
+            changeLevel: this.changeLevel,
+            updateScore: this.updateScore,
+            looseLive: this.looseLive,
+            levelGUIRender: this.renderLevelStartGUI
           }}
           initialScene={{ scene: GameSceneAR }} 
         />
@@ -151,10 +193,9 @@ export default class ViroSample extends Component {
           </TouchableHighlight>
           <TouchableHighlight style={localStyles.buttons}
             active={!this.state.modelLoading}
-            underlayColor={'#68a0ff'} 
-            onPress={this.loadModel} >
+            underlayColor={'#68a0ff'}>
             <Text style={localStyles.buttonText}>
-              Load Block
+              {`Lives: ${ this.state.lives }`}
             </Text>
           </TouchableHighlight>
         </View>
@@ -237,5 +278,7 @@ var localStyles = StyleSheet.create({
     borderColor: '#fff',
   }
 });
+
+
 
 module.exports = ViroSample
