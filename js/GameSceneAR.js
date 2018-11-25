@@ -16,17 +16,63 @@ import {
   ViroNode,
   ViroSphere, 
   ViroBox,
-  ViroMaterials
+  ViroMaterials,
+  ViroAnimations
 } from 'react-viro';
 
 
-const MODEL_TYPES = ["Lava", "Crystal", "Rocks", "Alien"]
+const MODELS = [
+  require("./res/tetris/blocks_1.vrx"),
+  require("./res/tetris/blocks_2.vrx"),
+  require("./res/tetris/blocks_3.vrx"),
+  require("./res/tetris/blocks_4.vrx"),
+  require("./res/tetris/blocks_5.vrx")
+]
+
+// PLANE HEIGHT/WIDTH = 1m
+const PLANE_SIZE = 0.5
 
 export class GameSceneAR extends Component {
 
   state = {
     isTracking: false,
-    initialized: false
+    initialized: false,
+    modelMap: [],
+    activatedIndexes: [],
+    loadedModelsCounter: 0,
+    nextModelIndex: 0,
+    planeWidth: 0,
+    planeLength: 0
+  }
+
+  modelsRefs = {}
+
+  getRandomModel = () => Math.floor(Math.random() * 5)
+
+  componentDidMount(){
+    this.loadLevel()
+  }
+
+  loadLevel = () => {
+    this.setState({
+      activatedIndexes: [],
+      loadedModelsCounter: 0,
+      nextModelIndex: 0,
+      planeWidth: 0,
+      planeLength: 0,
+      modelMap: Array.from(Array(this.props.arSceneNavigator.viroAppProps.modelNumber), () => Math.floor(Math.random() * 5))
+    });
+  }
+
+  resetLevel = () => {
+    this.setState({
+      activatedIndexes: [],
+      loadedModelsCounter: 0,
+      nextModelIndex: 0,
+      modelMap: Array.from(Array(this.props.arSceneNavigator.viroAppProps.modelNumber), () => Math.floor(Math.random() * 5)),
+      planeWidth: PLANE_SIZE / this.props.arSceneNavigator.viroAppProps.level,
+      planeLength: PLANE_SIZE / this.props.arSceneNavigator.viroAppProps.level
+    })
   }
 
   getUIText(uiText){
@@ -36,134 +82,122 @@ export class GameSceneAR extends Component {
       />
     )
   }
+ 
+  activateModelGravity(modelId, index) {
+    const { updateScore, changeLevel } = this.props.arSceneNavigator.viroAppProps
+    this.setState({
+      activatedIndexes: [...this.state.activatedIndexes, modelId],
+      nextModelIndex: index + 1
+    }, () => {
+      updateScore()
+      if (this.state.activatedIndexes.length === this.state.modelMap.length) {
+        changeLevel()
+      }
+    })
+  }
 
   getModelByType(modelType, index) {
-    switch (MODEL_TYPES[modelType]) {
-      case "Crystal":
-        return (
-          <ViroBox
-            key={index}
-            height={.03}
-            width={.05}
-            length={.07}
-            position={[0, .5, 0]}
-            materials={["crystal"]} 
-            dragType="FixedToWorld"
-            onDrag={() => {}}
-            physicsBody={{
-              type:'Dynamic', 
-              mass: 1,
-            }}
-          />
-        )
-      case "Alien":
-        return (
-          <ViroBox
-            key={index}
-            height={.06}
-            width={.02}
-            length={.04}
-            position={[0, .5, 0]}
-            materials={["alien"]} 
-            dragType="FixedToWorld"
-            onDrag={() => {}}
-            physicsBody={{
-              type:'Dynamic', 
-              mass: 1,
-            }}
-          />
-        )
-      case "Rocks":
-        return (
-          <ViroBox
-            key={index}
-            height={.03}
-            width={.05}
-            length={.06}
-            position={[0, .5, 0]}
-            materials={["rock"]} 
-            dragType="FixedToWorld"
-            onDrag={() => {}}
-            physicsBody={{
-              type:'Dynamic',               
-              mass: 1,
-            }}
-          />
-        )
-      case "Lava":
-        return (
-          <ViroBox
-            key={index}
-            height={.05}
-            width={.05}
-            length={.1}
-            position={[0, .5, 0]}
-            materials={["lava"]} 
-            dragType="FixedToWorld"
-            onDrag={() => {}}
-            physicsBody={{
-              type:'Dynamic', 
-              mass: 1,
-            }}
-          />
-        )
-    }
+    const modifier = index% 2 === 0 ? 1 : -1
+    const modelId = `$model:{modelType}-no:${index}`
+    const yPosition = this.state.nextModelIndex === index ? 0.5 : .5  + 0.1 * index
+    return (
+      <Viro3DObject
+        type="VRX" 
+        highAccuracyEvents
+        key={index}
+        scale={[0.04, 0.04, 0.04]}
+        viroTag={modelId}
+        animation={{
+          name: "loopRotate",
+          run: this.state.nextModelIndex === index,
+          interruptible: true,
+          loop:true
+        }}
+        opacity={
+          this.state.loadedModelsCounter === this.state.modelMap.length &&
+          (index === this.state.nextModelIndex || this.state.activatedIndexes.includes(modelId)) ? 1 : 0}
+        dragType="FixedDistance"
+        onDrag={() => {
+          if (!this.state.activatedIndexes.includes(modelId)) {
+            this.activateModelGravity(modelId, index)
+          }
+        }}
+        onLoadEnd={() => {
+          this.setState({
+            loadedModelsCounter: this.state.loadedModelsCounter + 1
+          })
+        }}
+        position={[0, yPosition, 0]}
+        source={MODELS[modelType]}
+        physicsBody={{
+          type:'Dynamic',
+          enabled: this.state.activatedIndexes.includes(`$model:{modelType}-no:${index}`),
+          mass: 1,
+        }}
+      />
+    )
   }
 
   
-  onCollide = () => {
-    this.props.arSceneNavigator.viroAppProps.gameOver()
+  deadZoneCollide = () => {
+    this.props.arSceneNavigator.viroAppProps.looseLive()
   }
+  
 
   onPlaneSelected = (anchorMap) => {
     this.setState({
-      planeWidth: anchorMap.width,
-      planeHeight: anchorMap.height
+      planeWidth: PLANE_SIZE / this.props.arSceneNavigator.viroAppProps.level,
+      planeLength: PLANE_SIZE / this.props.arSceneNavigator.viroAppProps.level
     })
   }
   
+  
   getARScene(){
    return (
-      <ViroARPlaneSelector onPlaneSelected={this.onPlaneSelected}>
+      <ViroARPlaneSelector onPlaneSelected={this.onPlaneSelected} pauseUpdates>
         { 
-          this.props.arSceneNavigator
-            .viroAppProps
-            .modelMap
-            .map((modelType, index) => 
-              this.getModelByType(modelType, index)) 
+          this.state.modelMap.map((modelType, index) => this.getModelByType(modelType, index))
         }
-      <ViroBox
-        materials={["metal"]}
-        physicsBody={{ type:'Static', restitution:0.3, friction: 0.3 }}
-        width={this.state.planeWidth}
-        height={this.state.planeHeight}
-        scale={[1,.01, 1]}
-      />
-      <ViroQuad 
-        key="deadZone"
-        height={100}
-        width={100}
-        rotation={[-90, 0, 0]}
-        position={[0,-3,0]}
-        materials={["transparent"]}
-        physicsBody={{ type:'Static' }}
-        onCollision={this.onCollide}
-      />
+        <ViroBox
+          materials={["metal"]}
+          physicsBody={{ type:'Static', restitution:0.3, friction: 0.3 }}
+          width={this.state.planeWidth}
+          length={this.state.planeLength}
+          scale={[1,.01, 1]}
+        />
+        <ViroQuad 
+          key="deadZone"
+          height={100}
+          width={100}
+          rotation={[-90, 0, 0]}
+          position={[0,-3,0]}
+          materials={["transparent"]}
+          physicsBody={{ type:'Static' }}
+          onCollision={this.deadZoneCollide}
+        />
       </ViroARPlaneSelector>
    )
   }
  
   render() {
     return (
-        <ViroARScene onTrackingUpdated={this._onInitialized} physicsWorld={{ gravity: [0, -5, 0] }}>
+        <ViroARScene onTrackingUpdated={this._onInitialized}>
           <ViroDirectionalLight color="#ffffff"
-            direction={[0, -1, 0]}
+            direction={[1, -1, -10]}
             shadowOrthographicPosition={[0, 8, -2]}
-            shadowOrthographicSize={10}
-            shadowNearZ={2}
-            shadowFarZ={9}
+            shadowOrthographicSize={5}
+            shadowNearZ={1}
+            shadowFarZ={4}
             castsShadow={true} 
           />
+          {
+            this.state.planeWidth === 0 && this.getUIText("Game Started - Please select play area")
+          }
+          {
+            this.state.loadedModelsCounter !== this.state.modelMap.length && 
+            this.state.planeWidth !== 0 && 
+            this.getUIText(`Loading 3d models ${this.state.loadedModelsCounter} of ${this.state.modelMap.length}`)
+          }
           { 
             this.state.isTracking ? 
             this.getARScene() : 
@@ -200,32 +234,6 @@ var styles = StyleSheet.create({
 });
 
 ViroMaterials.createMaterials({
-  rock: {
-    lightingModel: "Lambert",
-    diffuseTexture: require('./res/textures/Canyon_Rock_001_COLOR.jpg'),
-    normalTexture: require('./res/textures/Canyon_Rock_001_NORM.jpg'),
-  },
-  alien: {
-    lightingModel: "Blinn",
-    diffuseTexture: require('./res/textures/Alien_Flesh_001_color.jpg'),
-    normalTexture: require('./res/textures/Alien_Flesh_001_norm.jpg'),
-    specularTexture: require('./res/textures/Alien_Flesh_001_spec.jpg')
-  },
-  lava: {
-    lightingModel: "Lambert",
-    diffuseTexture: require("./res/textures/Lava_001_COLOR.png"),
-    normalTexture: require("./res/textures/Lava_001_NRM.png"),
-    specularTexture: require('./res/textures/Lava_001_SPEC.png')
-  },
-  crystal: {
-    lightingModel: "Lambert",
-    diffuseTexture: require("./res/textures/Crystal_002_COLOR.jpg"),
-    normalTexture: require("./res/textures/Crystal_002_NORM.jpg")
-  },
-  hud_text_bg: {
-    lightingModel: "Constant",
-    diffuseColor: "rgba(123,123,231,.4)"
-  },
   transparent: {
     diffuseColor: "rgba(0,0,0,0)"
   },
@@ -236,3 +244,18 @@ ViroMaterials.createMaterials({
     specularTexture: require('./res/textures/Metal_grunge_001_SPEC.jpg')
   }
 })
+
+
+ViroAnimations.registerAnimations({
+  loopRotate:{
+    properties:{
+      rotateY:"+=90",
+    }, duration:1000
+  },
+  rotate: {
+    properties: {
+      rotateZ: "+=90"
+    },
+    duration: 1000
+  }
+});
