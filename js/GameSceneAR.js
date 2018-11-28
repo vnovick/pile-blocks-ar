@@ -45,10 +45,6 @@ export class GameSceneAR extends Component {
     planeLength: 0
   }
 
-  modelsRefs = {}
-
-  getRandomModel = () => Math.floor(Math.random() * 5)
-
   componentDidMount(){
     this.loadLevel()
   }
@@ -64,16 +60,6 @@ export class GameSceneAR extends Component {
     });
   }
 
-  resetLevel = () => {
-    this.setState({
-      activatedIndexes: [],
-      loadedModelsCounter: 0,
-      nextModelIndex: 0,
-      modelMap: Array.from(Array(this.props.arSceneNavigator.viroAppProps.modelNumber), () => Math.floor(Math.random() * 5)),
-      planeWidth: PLANE_SIZE / this.props.arSceneNavigator.viroAppProps.level,
-      planeLength: PLANE_SIZE / this.props.arSceneNavigator.viroAppProps.level
-    })
-  }
 
   getUIText(uiText){
     return (
@@ -97,7 +83,6 @@ export class GameSceneAR extends Component {
   }
 
   getModelByType(modelType, index) {
-    const modifier = index% 2 === 0 ? 1 : -1
     const modelId = `$model:{modelType}-no:${index}`
     const yPosition = this.state.nextModelIndex === index ? 0.5 : .5  + 0.1 * index
     return (
@@ -131,6 +116,9 @@ export class GameSceneAR extends Component {
         source={MODELS[modelType]}
         physicsBody={{
           type:'Dynamic',
+          shape: {
+            type: "Compound"
+          },
           enabled: this.state.activatedIndexes.includes(`$model:{modelType}-no:${index}`),
           mass: 1,
         }}
@@ -163,7 +151,7 @@ export class GameSceneAR extends Component {
           physicsBody={{ type:'Static', restitution:0.3, friction: 0.3 }}
           width={this.state.planeWidth}
           length={this.state.planeLength}
-          scale={[1,.01, 1]}
+          scale={[1,.02, 1]}
         />
         <ViroQuad 
           key="deadZone"

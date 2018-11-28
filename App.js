@@ -140,8 +140,7 @@ export default class ViroSample extends Component {
           </Text>
           { this.state.gameState === GAME_STATES.MENU &&
             <Text style={localStyles.text}>
-              In this game you need to select a highlighted surface and pile blocks on it. When any of the blocks falls from the surface, you loose. You can drag any box on the surface.
-              Get to your highest score.
+              In this game you need to select a highlighted surface and pile blocks on it. When any of the blocks falls from the surface, you loose a life. 
             </Text>
           }
           <TouchableHighlight style={localStyles.buttons}
@@ -154,11 +153,6 @@ export default class ViroSample extends Component {
     );
   }
 
-  setGameReady = () => {
-    this.setState({
-      planeSelected: true
-    })
-  }
 
   renderGameView(){
     return (
